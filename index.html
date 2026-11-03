@@ -1,0 +1,592 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>별빛 밝기 여행</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout concept: a night-sky observation log. One column, four stations on a rail,
+   gold star points as the score, instrument-style readouts for every experiment. */
+:root{
+  --bg:#0a1226; --surface:#121c38; --surface2:#1a2750; --line:#2c3d70;
+  --fg:#eaf0ff; --muted:#a3b3da; --accent:#ffc94a; --accent-fg:#1b1500; --accent-text:#ffd66e;
+  --cool:#6fd6ff; --good:#5bd99a; --bad:#ff7a8a; --hud:#0d1630;
+  --f-display:'Jua','Noto Sans KR',sans-serif; --f-body:'Noto Sans KR',system-ui,sans-serif; --f-mono:'JetBrains Mono',ui-monospace,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f2f5fd; --surface:#ffffff; --surface2:#e5ebfa; --line:#c3cfec;
+    --fg:#14204a; --muted:#4d5c8b; --accent:#ffc94a; --accent-fg:#1b1500; --accent-text:#8a5a00;
+    --cool:#0b7fae; --good:#0d8a55; --bad:#c2253b; --hud:#e9eefb; color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f2f5fd; --surface:#ffffff; --surface2:#e5ebfa; --line:#c3cfec;
+  --fg:#14204a; --muted:#4d5c8b; --accent:#ffc94a; --accent-fg:#1b1500; --accent-text:#8a5a00;
+  --cool:#0b7fae; --good:#0d8a55; --bad:#c2253b; --hud:#e9eefb; color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--hud)}
+.wrap{max-width:880px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;line-height:1.25}
+p{margin:0}
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--hud);margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.hud-in{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-size:18px;color:var(--accent-text);white-space:nowrap}
+.rail{flex:1;min-width:210px;display:flex;align-items:center;gap:0}
+.rail button{all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:2px 0;flex:0 0 auto}
+.rail button:focus-visible{outline:2px solid var(--cool);outline-offset:2px;border-radius:6px}
+.rail .dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);background:var(--bg)}
+.rail .seg{flex:1;height:2px;background:var(--line);min-width:10px}
+.rail .on .dot{border-color:var(--accent);color:var(--accent-text)}
+.rail .ok .dot{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.rail button[disabled]{cursor:not-allowed;opacity:.55}
+.rail .lbl{display:none}
+@media(min-width:640px){.rail .lbl{display:inline}}
+.score{font-family:var(--f-mono);font-weight:700;font-size:16px;display:flex;align-items:center;gap:6px;color:var(--accent-text)}
+.score svg{width:18px;height:18px;fill:var(--accent)}
+.score.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.25)}}
+.toolbar{display:flex;gap:6px}
+.iconbtn{all:unset;cursor:pointer;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.iconbtn:focus-visible{outline:2px solid var(--cool)}
+
+.hero{display:flex;gap:16px;align-items:center;padding:26px 0 8px}
+.hero h1{font-size:clamp(26px,5vw,38px)}
+.hero p{color:var(--muted);margin-top:6px}
+.rules{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pill{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);white-space:nowrap}
+.pill b{color:var(--accent-text)}
+
+.bubble{display:flex;gap:12px;align-items:flex-start;margin:14px 0}
+.bubble svg{flex:0 0 64px;width:64px;height:64px}
+.bubble .say{background:var(--surface);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:10px 14px;min-width:0}
+.bubble .say b{color:var(--accent-text)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.card > h3{font-size:19px;margin-bottom:4px}
+.card > .sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-fg);background:var(--accent);border-radius:4px;padding:1px 7px;margin-right:6px;vertical-align:2px}
+.lab{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:640px){.lab{grid-template-columns:minmax(0,1fr)}}
+.lab svg.scene{width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;display:block}
+.ctrl{display:flex;flex-direction:column;gap:12px;min-width:0}
+.seg2{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg2 button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px 8px;font-size:14px;color:var(--muted)}
+.seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);font-weight:700}
+.seg2 button:focus-visible{outline:2px solid var(--cool);outline-offset:-2px}
+label.rg{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.read{font-family:var(--f-mono);font-size:13px;display:flex;justify-content:space-between;gap:8px}
+.read b{color:var(--fg);font-size:15px}
+.meter{position:relative;height:16px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--cool),var(--accent));width:10%;transition:width .15s}
+.meter u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--fg);left:22%}
+.mlab{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+table.log{width:100%;border-collapse:collapse;font-size:13px}
+table.log th,table.log td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+table.log th{background:var(--surface2);font-weight:500}
+table.log td.num{font-family:var(--f-mono);text-align:right}
+table.log tr.hit td{background:color-mix(in srgb,var(--good) 18%,transparent)}
+.mission{border:1.5px dashed var(--accent);border-radius:12px;padding:12px 14px;margin-top:14px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.mission h4{margin:0 0 4px;font-family:var(--f-display);font-weight:400;font-size:16px;color:var(--accent-text)}
+.mission.done{border-style:solid;border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.mission.done h4{color:var(--good)}
+.q{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.q:first-of-type{border-top:0;padding-top:0;margin-top:0}
+.qt{font-weight:500;margin-bottom:8px}
+.opts{display:grid;gap:8px}
+.opt{all:unset;cursor:pointer;display:block;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 12px;font-size:14px}
+.opt:hover:not([disabled]){border-color:var(--cool)}
+.opt:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent);animation:shake .3s}
+.opt[disabled]{cursor:default}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.qfoot{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;min-height:30px}
+.fb{font-size:13px;color:var(--muted);flex:1;min-width:180px}
+.fb.good{color:var(--good)} .fb.bad{color:var(--bad)}
+.btn{all:unset;cursor:pointer;font-family:var(--f-display);font-size:16px;background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:8px 22px;text-align:center}
+.btn:focus-visible{outline:2px solid var(--cool);outline-offset:3px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent-text);border:1px solid var(--accent);font-size:13px;padding:3px 12px}
+.checks{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.checks span{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted)}
+.checks span.on{border-color:var(--good);color:var(--good)}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.nav .hintline{color:var(--muted);font-size:13px}
+.badge{display:inline-block;font-family:var(--f-mono);font-size:12px;border-radius:6px;padding:2px 8px;border:1px solid var(--line)}
+.badge.near{color:var(--cool);border-color:var(--cool)}
+.badge.mid{color:var(--accent-text);border-color:var(--accent)}
+.badge.far{color:var(--bad);border-color:var(--bad)}
+.order{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+.starbtn{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;width:92px;padding:8px 4px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font-size:12px;text-align:center}
+.starbtn:focus-visible{outline:2px solid var(--cool)}
+.starbtn[disabled]{opacity:.45;cursor:default}
+.starbtn .m{font-family:var(--f-mono);font-size:13px;color:var(--accent-text)}
+.starbtn svg{width:46px;height:46px}
+.slots{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.slot{flex:1;min-width:70px;border:1px dashed var(--line);border-radius:8px;padding:5px;text-align:center;font-size:12px;color:var(--muted);min-height:32px}
+.slot.f{border-style:solid;border-color:var(--good);color:var(--fg)}
+.kit{display:grid;gap:10px}
+.kit .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+@media(max-width:560px){.kit .row{grid-template-columns:minmax(0,1fr)}}
+.tri{display:flex;gap:6px}
+.tri button{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:13px}
+.tri button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:700}
+.tri button:focus-visible{outline:2px solid var(--cool)}
+.tri.good button[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#04180e}
+.tri.bad button[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#2a0008}
+.mini{width:100%;max-width:100%;overflow-x:auto}
+.cert{border:2px solid var(--accent);border-radius:16px;padding:22px 18px;text-align:center;background:var(--surface);position:relative}
+.cert h2{font-size:26px;color:var(--accent-text)}
+.cert .big{font-family:var(--f-mono);font-size:44px;font-weight:700;color:var(--accent-text)}
+.cert input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;width:min(260px,100%);text-align:center}
+.three{display:grid;gap:10px;text-align:left;margin-top:14px}
+.three div{border-left:3px solid var(--accent);padding:2px 0 2px 12px}
+.muted{color:var(--muted)}
+.rulebox{border:1px solid var(--cool);border-radius:10px;padding:10px 14px;background:color-mix(in srgb,var(--cool) 8%,transparent)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="hud"><div class="hud-in">
+  <div class="brand">별빛 밝기 여행</div>
+  <nav class="rail" id="rail" aria-label="정거장"></nav>
+  <div class="score" id="score" title="별 점수"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.6 5.7 21.2l1.5-7.1L1.8 9.2 9 8.4z"/></svg><span id="scoreN">0</span></div>
+</div></div>
+
+<main class="wrap" id="app"></main>
+
+<script>
+(function(){
+'use strict';
+/* ---------- data ---------- */
+var STATIONS=[
+  {id:'s1',name:'밝기 체험',tasks:['s1m','s1q1','s1q2']},
+  {id:'s2',name:'별의 등급',tasks:['s2m','s2q1','s2q2']},
+  {id:'s3',name:'등급과 거리',tasks:['s3m','s3q1','s3q2','s3q3']},
+  {id:'s4',name:'정리 퀴즈',tasks:['s4m','s4q1','s4q2','s4q3','s4q4']}
+];
+var MAX_SCORE=3*(3+3+4+5)+1; // 46
+var state={score:0,st:0,unlocked:0,tasks:{},wrong:{},hinted:{},lab1:{small:true,d:1,log:{}},lab2:{a:1,b:6,order:[]},lab3:{star:0,t:420,bonus:false},cards:{},match:{},name:''};
+
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function addScore(n){
+  state.score=Math.max(0,state.score+n);
+  $('#scoreN').textContent=state.score;
+  var el=$('#score'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+}
+function done(id){return !!state.tasks[id]}
+function stationDone(i){return STATIONS[i].tasks.every(done)}
+
+/* ---------- mascot ---------- */
+function mascot(){
+  return '<svg viewBox="0 0 64 64" aria-hidden="true">'+
+  '<path d="M6 54 C16 44 22 38 30 30" stroke="var(--cool)" stroke-width="5" stroke-linecap="round" fill="none" opacity=".55"/>'+
+  '<path d="M3 46 C12 40 18 36 26 29" stroke="var(--cool)" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>'+
+  '<path d="M38 6l5.6 12.3 13.4 1.5-10 9.1 2.8 13.2L38 35.2 26.2 42.1l2.8-13.2-10-9.1 13.4-1.5z" fill="var(--accent)" stroke="#b07d00" stroke-width="1.4" stroke-linejoin="round"/>'+
+  '<circle cx="33.5" cy="23" r="2" fill="#2a1d00"/><circle cx="43" cy="23" r="2" fill="#2a1d00"/>'+
+  '<path d="M34 28 Q38.2 32 42.4 28" stroke="#2a1d00" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+  '<circle cx="30.5" cy="27" r="2" fill="#ff9d7a" opacity=".7"/><circle cx="46" cy="27" r="2" fill="#ff9d7a" opacity=".7"/></svg>';
+}
+function say(html){return '<div class="bubble">'+mascot()+'<div class="say">'+html+'</div></div>'}
+
+/* ---------- question component ---------- */
+var QDEF={};
+function qBlock(id,d){
+  QDEF[id]=d;
+  var fin=done(id);
+  var opts=d.opts.map(function(o,i){
+    var cls='opt'+(fin&&i===d.ans?' right':'');
+    return '<button class="'+cls+'" data-i="'+i+'"'+(fin?' disabled':'')+'>'+o+'</button>';
+  }).join('');
+  return '<div class="q" data-q="'+id+'"><p class="qt">'+d.q+'</p><div class="opts">'+opts+'</div>'+
+    '<div class="qfoot"><button class="btn ghost hintbtn"'+(fin?' hidden':'')+'>힌트 −1</button><span class="fb'+(fin?' good':'')+'" aria-live="polite">'+(fin?'정답! '+d.why:(state.hinted[id]?'힌트: '+d.hint:''))+'</span></div></div>';
+}
+function bindQs(root){
+  $$('.q',root).forEach(function(box){
+    var id=box.getAttribute('data-q'),d=QDEF[id];
+    var fb=$('.fb',box);
+    $$('.opt',box).forEach(function(b){
+      b.addEventListener('click',function(){
+        if(done(id))return;
+        var i=+b.getAttribute('data-i');
+        if(i===d.ans){
+          var first=!state.wrong[id];
+          state.tasks[id]=true; b.classList.add('right');
+          $$('.opt',box).forEach(function(x){x.disabled=true});
+          $('.hintbtn',box).hidden=true;
+          if(first){addScore(3);fb.textContent='정답! +3  '+d.why}else{fb.textContent='정답! (두 번째 이후 시도는 점수가 없어요)  '+d.why}
+          fb.className='fb good'; refresh();
+        }else{
+          state.wrong[id]=true; b.classList.add('wrong'); b.disabled=true; addScore(-1);
+          fb.textContent='아쉬워요, −1. 다른 보기를 골라 보세요.'; fb.className='fb bad';
+        }
+      });
+    });
+    $('.hintbtn',box).addEventListener('click',function(){
+      if(!state.hinted[id]){state.hinted[id]=true;addScore(-1)}
+      fb.textContent='힌트: '+d.hint; fb.className='fb';
+    });
+  });
+}
+function missionWin(id,box,msg){
+  if(done(id))return;
+  state.tasks[id]=true; addScore(3);
+  box.classList.add('done');
+  $('.mstat',box).innerHTML=msg+' <b>+3</b>';
+  refresh();
+}
+
+/* ---------- chrome ---------- */
+function drawRail(){
+  var h='';
+  STATIONS.forEach(function(s,i){
+    var cls=(i===state.st?'on ':'')+(stationDone(i)?'ok':'');
+    h+='<button data-go="'+i+'" class="'+cls+'"'+(i>state.unlocked?' disabled':'')+' aria-label="'+(i+1)+'번 정거장 '+s.name+'"><span class="dot">'+(i+1)+'</span><span class="lbl">'+s.name+'</span></button>';
+    if(i<STATIONS.length-1)h+='<span class="seg"></span>';
+  });
+  h+='<span class="seg"></span><button data-go="4" class="'+(state.st===4?'on':'')+(state.unlocked>=4?'':'')+'"'+(state.unlocked<4?' disabled':'')+' aria-label="수료증"><span class="dot">★</span><span class="lbl">수료</span></button>';
+  $('#rail').innerHTML=h;
+  $$('#rail button').forEach(function(b){b.addEventListener('click',function(){go(+b.getAttribute('data-go'))})});
+}
+function checksHtml(i){
+  var t=STATIONS[i].tasks;
+  var names=['미션','문제 1','문제 2','문제 3','문제 4'];
+  if(i===3)names=['짝짓기','문제 1','문제 2','문제 3','문제 4'];
+  return '<div class="checks" id="checks">'+t.map(function(k,j){return '<span class="'+(done(k)?'on':'')+'">'+(done(k)?'✓ ':'')+names[j]+'</span>'}).join('')+'</div>';
+}
+function navHtml(i){
+  var ok=stationDone(i);
+  var last=i===3;
+  return '<div class="nav"><span class="hintline" id="navhint">'+(ok?'모든 과제를 마쳤어요!':'미션과 문제를 모두 풀면 다음 정거장이 열려요.')+'</span>'+
+    '<button class="btn" id="next"'+(ok?'':' disabled')+'>'+(last?'수료증 받기':'다음 정거장으로')+'</button></div>';
+}
+function refresh(){
+  var i=state.st; if(i>3){drawRail();return}
+  var c=$('#checks'); if(c)c.outerHTML=checksHtml(i);
+  var nv=$('.nav'); if(nv&&!nv.dataset.f){var ok=stationDone(i);$('#next').disabled=!ok;$('#navhint').textContent=ok?'모든 과제를 마쳤어요!':'미션과 문제를 모두 풀면 다음 정거장이 열려요.'}
+  if(stationDone(i)&&state.unlocked<i+1)state.unlocked=i+1;
+  drawRail();
+}
+function go(i){
+  if(i>state.unlocked)return;
+  state.st=i; render(); window.scrollTo({top:0,behavior:'auto'});
+}
+
+/* ---------- Station 1 ---------- */
+function s1(){
+  return say('안녕, 난 <b>별똥이</b>! 밤하늘의 별은 어떤 건 아주 밝고 어떤 건 희미해서 겨우 보여. 왜 그럴까? 먼저 <b>손전등</b>으로 알아보자. (교과서 230쪽)')+
+  '<section class="card"><h3><span class="tag">해보기</span>손전등의 밝기 비교하기</h3><p class="sub">스마트 기기의 조도 센서로 손전등의 밝기를 측정하고 있어요. 기준선은 센서에서 거리 1입니다.</p>'+
+  '<div class="lab"><svg class="scene" id="svg1" viewBox="0 0 300 280" role="img" aria-label="조도 센서 위에 손전등이 있는 실험 장면"></svg>'+
+  '<div class="ctrl"><div class="seg2" role="group" aria-label="손전등 종류"><button id="L-small" aria-pressed="true">작은 손전등</button><button id="L-big" aria-pressed="false">큰 손전등</button></div>'+
+  '<label class="rg">센서와의 거리<input type="range" id="r1" min="0.5" max="4" step="0.1" value="1"></label>'+
+  '<div class="read"><span>거리 <b id="d1">1.0</b></span><span>측정 밝기 <b id="v1">100</b></span></div>'+
+  '<div><div class="meter" aria-hidden="true"><i id="m1"></i><u id="t1"></u></div><div class="mlab"><span>0</span><span id="tlab">▲ 기준선 작은 손전등 = 100</span><span>450</span></div></div></div></div>'+
+  '<p class="sub" style="margin:14px 0 6px">교과서 활동을 직접 해 보세요. 조건이 맞으면 기록표가 채워져요.</p>'+
+  '<table class="log"><thead><tr><th>활동</th><th>조건</th><th>측정 밝기</th></tr></thead><tbody>'+
+  '<tr id="e1"><td>①</td><td>작은 손전등, 기준선(거리 1)</td><td class="num" id="ev1">–</td></tr>'+
+  '<tr id="e2"><td>②</td><td>작은 손전등, 기준선보다 먼 곳(거리 1.5 이상)</td><td class="num" id="ev2">–</td></tr>'+
+  '<tr id="e3"><td>③</td><td>큰 손전등, 기준선(거리 1)</td><td class="num" id="ev3">–</td></tr></tbody></table>'+
+  '<p class="fb" id="s1sum" style="margin-top:8px"></p>'+
+  '<div class="mission" id="mis1"><h4>미션 1</h4><p>실제 밝기가 다른 두 손전등이 <b>같은 밝기로 측정</b>되게 만들어 보세요. 큰 손전등을 골라 거리를 조절해 측정 밝기가 <b>100 (±8)</b>이 되면 성공이에요.</p><p class="mstat muted" style="margin-top:4px">'+(done('s1m')?'성공! <b>+3</b>':'아직 도전 전')+'</p></div></section>'+
+  '<section class="card"><h3>개념 확인</h3><p class="sub">활동 결과를 떠올려 풀어 보세요.</p>'+
+  qBlock('s1q1',{q:'활동 ①과 ②에서 같은 손전등인데 측정 밝기가 달랐어요. 그 까닭은?',opts:['거리가 멀어질수록 어둡게 측정되기 때문','손전등이 멀리 가면 실제로 어두워지기 때문','센서가 고장났기 때문'],ans:0,hint:'손전등이 센서에서 멀어지면 빛이 어떻게 보일까요?',why:'실제 밝기가 같아도 거리가 멀면 어둡게 측정돼요.'})+
+  qBlock('s1q2',{q:'두 손전등의 <b>실제 밝기</b>를 공정하게 비교하려면?',opts:['같은 거리에 놓고 측정한다','가까이 둔 것이 더 밝다고 정한다','서로 다른 거리에서 측정해 숫자만 비교한다'],ans:0,hint:'거리가 다르면 측정값이 달라지니, 거리를 어떻게 해야 할까요?',why:'별의 밝기를 비교할 때도 마찬가지예요.'})+'</section>'+
+  checksHtml(0)+navHtml(0);
+}
+function s1bind(){
+  var S=state.lab1,svg=$('#svg1');
+  function reading(){return Math.round((S.small?1:4)/(S.d*S.d)*100)}
+  function draw(){
+    var v=reading(),y=252-45*S.d,w=S.small?14:28,bodyH=40;
+    var op=Math.min(.75,.1+v/600);
+    svg.innerHTML=
+     '<g stroke="var(--line)" stroke-width=".6" opacity=".6">'+[40,80,120,160,200].map(function(x){return '<line x1="0" x2="300" y1="'+x+'" y2="'+x+'"/>'}).join('')+'</g>'+
+     '<line x1="0" x2="300" y1="207" y2="207" stroke="var(--cool)" stroke-dasharray="5 4"/><text x="8" y="201" font-size="11" fill="var(--cool)">기준선</text>'+
+     '<polygon points="'+(150-w/3)+','+y+' '+(150+w/3)+','+y+' 190,250 110,250" fill="var(--accent)" opacity="'+op+'"/>'+
+     '<g><rect x="'+(150-w/2)+'" y="'+(y-bodyH)+'" width="'+w+'" height="'+bodyH+'" rx="4" fill="var(--surface2)" stroke="var(--fg)" stroke-width="1.5"/>'+
+     '<rect x="'+(150-w/2-3)+'" y="'+(y-6)+'" width="'+(w+6)+'" height="8" rx="2" fill="var(--muted)"/>'+
+     '<ellipse cx="150" cy="'+(y+3)+'" rx="'+(w/2)+'" ry="3" fill="var(--accent)"/></g>'+
+     '<text x="'+(S.small?170:178)+'" y="'+(y-14)+'" font-size="11" fill="var(--fg)">'+(S.small?'작은 손전등':'큰 손전등')+'</text>'+
+     '<rect x="90" y="252" width="120" height="20" rx="6" fill="var(--surface2)" stroke="var(--line)"/><circle cx="150" cy="252" r="4" fill="var(--cool)"/>'+
+     '<text x="150" y="266" text-anchor="middle" font-size="10" fill="var(--muted)">스마트 기기(조도 센서)</text>';
+    $('#d1').textContent=S.d.toFixed(1); $('#v1').textContent=v;
+    $('#m1').style.width=Math.min(100,v/450*100)+'%'; $('#t1').style.left=(100/450*100)+'%';
+    // experiment log
+    var ok1=S.small&&Math.abs(S.d-1)<0.05, ok2=S.small&&S.d>=1.5, ok3=!S.small&&Math.abs(S.d-1)<0.05;
+    if(ok1)S.log.e1=v; if(ok2)S.log.e2=v; if(ok3)S.log.e3=v;
+    [1,2,3].forEach(function(k){var tr=$('#e'+k);if(S.log['e'+k]!=null){$('#ev'+k).textContent=S.log['e'+k];tr.classList.add('hit')}});
+    if(S.log.e1!=null&&S.log.e2!=null&&S.log.e3!=null){
+      $('#s1sum').textContent='정리: ①과 ②는 실제 밝기가 같지만 거리가 멀수록 어둡게 측정돼요. ①과 ③은 같은 거리에서 측정했으니, 측정값이 더 큰 큰 손전등이 실제로 더 밝아요.';
+    }
+    // mission
+    if(!S.small&&Math.abs(v-100)<=8)missionWin('s1m',$('#mis1'),'성공! 큰 손전등을 멀리 두니 작은 손전등과 같은 밝기로 측정됐어요.');
+  }
+  $('#r1').value=S.d;
+  $('#L-small').setAttribute('aria-pressed',S.small);$('#L-big').setAttribute('aria-pressed',!S.small);
+  $('#L-small').onclick=function(){S.small=true;$('#L-small').setAttribute('aria-pressed','true');$('#L-big').setAttribute('aria-pressed','false');draw()};
+  $('#L-big').onclick=function(){S.small=false;$('#L-big').setAttribute('aria-pressed','true');$('#L-small').setAttribute('aria-pressed','false');draw()};
+  $('#r1').oninput=function(){S.d=Math.round(parseFloat(this.value)*10)/10;draw()};
+  if(done('s1m')){$('#mis1').classList.add('done')}
+  draw();
+}
+
+/* ---------- Station 2 ---------- */
+var STARS2=[
+  {n:'시리우스',m:-1.5},{n:'직녀성(베가)',m:0.0},{n:'북극성',m:2.0},{n:'육안으로 보이는 한계',m:6.0}
+];
+function glow(m,id){
+  var b=Math.pow(10,-0.4*m), r=7+17*Math.sqrt(Math.min(1,b/4.5)), a=Math.min(1,.25+b/2.5);
+  return '<svg viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="'+(r+4).toFixed(1)+'" fill="var(--accent)" opacity="'+(a*.25).toFixed(2)+'"/><circle cx="23" cy="23" r="'+r.toFixed(1)+'" fill="var(--accent)" opacity="'+a.toFixed(2)+'"/></svg>';
+}
+function s2(){
+  return say('별의 밝기는 <b>등급</b>이라는 숫자로 나타내. 우리 눈에 보이는 밝기를 나타낸 것이 <b>겉보기 등급</b>이야. 숫자가 <b>작을수록</b> 밝은 별이라는 게 포인트! (교과서 231쪽)')+
+  '<section class="card"><h3><span class="tag">탐구</span>등급 차이와 밝기 차이</h3><p class="sub">두 별의 겉보기 등급을 바꿔 보며 밝기 차이를 확인해 보세요.</p>'+
+  '<div class="lab"><div class="mini"><svg class="scene" id="svg2" viewBox="0 0 300 150" role="img" aria-label="두 별의 밝기 비교"></svg></div>'+
+  '<div class="ctrl"><label class="rg">별 A의 겉보기 등급 <b id="ma" class="muted"></b><input type="range" id="ra" min="-2" max="8" step="1"></label>'+
+  '<label class="rg">별 B의 겉보기 등급 <b id="mb" class="muted"></b><input type="range" id="rb" min="-2" max="8" step="1"></label>'+
+  '<div class="read"><span id="ratio" style="font-family:var(--f-body)"></span></div></div></div>'+
+  '<p class="sub" style="margin-top:10px">참고: 1등급 사이에는 약 2.5배의 밝기 차이가 있어요. 1등급 별은 6등급 별보다 100배 밝아요.</p>'+
+  '<div class="mission" id="mis2"><h4>미션 2</h4><p>아래 네 별을 <b>밝은 별부터 어두운 별 순서</b>로 눌러 보세요.</p>'+
+  '<div class="slots" id="slots2"></div><div class="order" id="order2"></div><p class="mstat muted">'+(done('s2m')?'성공! <b>+3</b>':'아직 도전 전')+'</p></div></section>'+
+  '<section class="card"><h3>개념 확인</h3>'+
+  qBlock('s2q1',{q:'1등급인 별은 6등급인 별보다 약 몇 배 밝을까요?',opts:['약 2.5배','약 6배','약 100배','약 600배'],ans:2,hint:'탐구에서 A를 1, B를 6으로 맞춰 보세요.',why:'등급이 1 작아질 때마다 약 2.5배, 5등급 차이면 100배예요.'})+
+  qBlock('s2q2',{q:'별이 모두 <b>같은 거리인 10 pc</b>에 있다고 가정하여 나타낸 밝기 등급을 무엇이라고 할까요?',opts:['겉보기 등급','절대 등급','연주 시차','광년'],ans:1,hint:'별의 실제 밝기를 비교하려면 같은 거리에서 본다고 가정해야 해요.',why:'눈에 보이는 밝기는 겉보기 등급, 10 pc 기준은 절대 등급이에요. (1 pc ≈ 3.26광년)'})+'</section>'+
+  checksHtml(1)+navHtml(1);
+}
+function s2bind(){
+  var S=state.lab2,svg=$('#svg2');
+  function ratioText(){
+    var d=Math.abs(S.a-S.b);
+    if(d===0)return '두 별의 밝기가 같아요.';
+    var r=Math.pow(10,0.4*d), bright=S.a<S.b?'A':'B', dim=S.a<S.b?'B':'A';
+    var rs=r>=10?Math.round(r):r.toFixed(1);
+    return '<b style="color:var(--accent-text)">'+bright+'</b>가 '+dim+'보다 약 <b style="color:var(--accent-text)">'+rs+'배</b> 밝아요. (등급 차이 '+d+')';
+  }
+  function draw(){
+    function star(cx,m,name){
+      var b=Math.pow(10,-0.4*m),r=6+30*Math.sqrt(Math.min(1,b/4.5)),a=Math.min(1,.2+b/2.5);
+      return '<circle cx="'+cx+'" cy="68" r="'+(r+10).toFixed(1)+'" fill="var(--accent)" opacity="'+(a*.18).toFixed(2)+'"/><circle cx="'+cx+'" cy="68" r="'+r.toFixed(1)+'" fill="var(--accent)" opacity="'+a.toFixed(2)+'"/>'+
+      '<text x="'+cx+'" y="128" text-anchor="middle" font-size="12" fill="var(--fg)">별 '+name+' · '+m+'등급</text>';
+    }
+    svg.innerHTML=star(80,S.a,'A')+star(220,S.b,'B');
+    $('#ma').textContent=S.a+'등급'; $('#mb').textContent=S.b+'등급'; $('#ratio').innerHTML=ratioText();
+  }
+  $('#ra').value=S.a;$('#rb').value=S.b;
+  $('#ra').oninput=function(){S.a=+this.value;draw()};
+  $('#rb').oninput=function(){S.b=+this.value;draw()};
+  draw();
+  // ordering mission
+  var shuffled=STARS2.map(function(s,i){return i}); var perm=[2,0,3,1];
+  var correct=[0,1,2,3];
+  function drawOrder(){
+    var fin=done('s2m');
+    $('#slots2').innerHTML=correct.map(function(k,j){
+      var f=S.order.length>j||fin; var s=STARS2[k];
+      return '<div class="slot '+(f?'f':'')+'">'+(j===0?'가장 밝음':j===3?'가장 어두움':'')+(f?'<br><b>'+s.n+'</b>':'<br>'+(j+1)+'번째')+'</div>';
+    }).join('');
+    $('#order2').innerHTML=perm.map(function(k){
+      var s=STARS2[k], used=S.order.indexOf(k)>=0||fin;
+      return '<button class="starbtn" data-k="'+k+'"'+(used?' disabled':'')+'>'+glow(s.m)+'<span>'+s.n+'</span><span class="m">'+s.m.toFixed(1)+'등급</span></button>';
+    }).join('');
+    $$('#order2 .starbtn').forEach(function(b){b.onclick=function(){
+      var k=+b.getAttribute('data-k'),need=correct[S.order.length];
+      if(k===need){S.order.push(k);drawOrder();if(S.order.length===4)missionWin('s2m',$('#mis2'),'성공! 등급 숫자가 작을수록 밝아요.')}
+      else{addScore(-1);b.classList.add('wrongflash');$('#mis2 .mstat').textContent='그 별보다 더 밝은 별이 남아 있어요. (−1) 등급 숫자를 비교해 보세요.'}
+    }});
+  }
+  if(done('s2m')){$('#mis2').classList.add('done')}
+  drawOrder();
+}
+
+/* ---------- Station 3 ---------- */
+var STARS3=[{n:'시리우스',M:1.4,real:'약 2.6 pc(8.6광년)'},{n:'베텔게우스',M:-5.6,real:'약 150~200 pc'},{n:'수수께끼의 별',M:0.0,real:''}];
+var DMIN=1,DMAX=300;
+function tToD(t){return Math.pow(10,Math.log10(DMIN)+(t/1000)*(Math.log10(DMAX)-Math.log10(DMIN)))}
+function s3(){
+  return say('이번엔 <b>절대 등급</b>이야. 별을 모두 <b>10 pc</b>에 놓았다고 가정했을 때의 밝기지. 눈에 보이는 <b>겉보기 등급</b>과 비교하면 별까지의 거리를 알 수 있어! (교과서 231쪽)')+
+  '<section class="card"><h3><span class="tag">탐구</span>별을 앞뒤로 옮겨 보기</h3><p class="sub">별을 골라 거리를 바꾸면 겉보기 등급이 어떻게 변하는지 보세요. 절대 등급은 바뀌지 않아요.</p>'+
+  '<div class="seg2" id="pick3" role="group" aria-label="별 선택">'+STARS3.map(function(s,i){return '<button data-i="'+i+'" aria-pressed="'+(i===0)+'">'+s.n+'</button>'}).join('')+'</div>'+
+  '<div class="mini" style="margin-top:12px"><svg class="scene" id="svg3" viewBox="0 0 600 150" role="img" aria-label="지구와 별 사이의 거리 눈금" style="min-width:520px"></svg></div>'+
+  '<label class="rg" style="margin-top:10px">지구에서 별까지의 거리 <input type="range" id="r3" min="0" max="1000" step="1"></label>'+
+  '<table class="log" style="margin-top:10px"><tbody><tr><th>거리</th><td class="num" id="d3"></td><th>절대 등급 M</th><td class="num" id="M3"></td></tr>'+
+  '<tr><th>겉보기 등급 m</th><td class="num" id="m3"></td><th>비교</th><td id="cmp3"></td></tr>'+
+  '<tr><th>m − M</th><td class="num" id="mm3"></td><th>뜻</th><td id="mean3" style="font-size:13px"></td></tr></tbody></table>'+
+  '<div class="rulebox" style="margin-top:12px"><b>등급과 거리의 관계</b><ul style="margin:6px 0 0;padding-left:18px"><li>m − M이 <b>0</b>이면 별은 10 pc에 있어요.</li><li>m − M이 <b>음수</b>(m &lt; M)이면 10 pc보다 <b>가까워요</b>.</li><li>m − M이 <b>양수</b>(m &gt; M)이면 10 pc보다 <b>멀어요</b>. 값이 클수록 더 멀리 있는 별이에요.</li></ul>'+
+  '<p class="muted" style="font-size:13px;margin-top:6px">심화: 별까지의 거리가 10배 멀어질 때마다 겉보기 등급은 5씩 커지고(밝기는 1/100), 이 별에서는 아래 표처럼 변해요.</p></div>'+
+  '<div class="mini" style="margin-top:8px"><table class="log" id="rel3" style="min-width:420px"><thead><tr><th>거리(pc)</th><th>겉보기 등급 m</th><th>m − M</th><th>10 pc와 비교</th></tr></thead><tbody></tbody></table></div>'+
+  '<p class="fb" id="s3fb" style="margin-top:8px">'+(state.lab3.bonus?'숨은 별 찾기 성공! +1':'')+'</p>'+
+  '<p class="sub" style="margin-top:6px">숨은 도전(+1): 시리우스의 겉보기 등급이 <b>−1.5등급</b>이 되도록 옮겨 보세요.</p>'+
+  '<div class="mission" id="mis3"><h4>미션 3</h4><p>세 별의 겉보기 등급(m)과 절대 등급(M)이 아래와 같을 때, 별이 <b>10 pc보다 가까운지, 10 pc인지, 먼지</b> 골라 보세요.</p>'+
+  '<div class="kit" id="kit3"></div><div class="qfoot"><button class="btn" id="chk3"'+(done('s3m')?' disabled':'')+'>확인하기</button><span class="fb" id="kfb"></span></div><p class="mstat muted">'+(done('s3m')?'성공! <b>+3</b>':'아직 도전 전')+'</p></div></section>'+
+  '<section class="card"><h3><span class="tag">관계</span>등급 차(m − M)와 별까지의 거리</h3>'+
+  '<p class="sub">겉보기 등급에서 절대 등급을 뺀 값(m − M)이 클수록 멀리 있는 별이에요. 거리가 10배 멀어질 때마다 m − M은 5씩 커지고, 별은 100배 어두워 보여요. (이 표와 계산기는 교과서 내용을 숫자로 확장한 심화 자료예요.)</p>'+
+  '<div class="mini"><table class="log" style="min-width:460px"><thead><tr><th>m − M</th><th class="num">−5</th><th class="num">0</th><th class="num">+5</th><th class="num">+10</th></tr></thead><tbody>'+
+  '<tr><th>별까지의 거리</th><td class="num">1 pc</td><td class="num">10 pc</td><td class="num">100 pc</td><td class="num">1000 pc</td></tr>'+
+  '<tr><th>10 pc와 비교</th><td>10배 가깝다</td><td>기준</td><td>10배 멀다</td><td>100배 멀다</td></tr></tbody></table></div>'+
+  '<div class="lab" style="margin-top:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div class="ctrl">'+
+  '<label class="rg">겉보기 등급 m <b id="cmv" class="muted"></b><input type="range" id="cm" min="-2" max="15" step="0.5"></label>'+
+  '<label class="rg">절대 등급 M <b id="cMv" class="muted"></b><input type="range" id="cM" min="-8" max="10" step="0.5"></label></div>'+
+  '<div class="ctrl"><div class="read"><span>m − M <b id="cdiff"></b></span></div><div class="read"><span>거리 <b id="cdist"></b></span></div><div id="ccmp"></div></div></div>'+
+  '<p class="sub" style="margin-top:8px">계산기는 m − M = 5 × log(거리 ÷ 10)에서 거리를 구해요. m과 M이 같으면 10 pc, m − M이 클수록 멀어요.</p></section>'+
+  '<section class="card"><h3>개념 확인</h3>'+
+  qBlock('s3q1',{q:'표는 두 별 (가), (나)의 등급이에요. 지구에서 더 멀리 있는 별은 어느 것일까요?<table class="log" style="margin:8px 0"><thead><tr><th>별</th><th>겉보기 등급</th><th>절대 등급</th></tr></thead><tbody><tr><td>(가)</td><td class="num">1</td><td class="num">5</td></tr><tr><td>(나)</td><td class="num">3</td><td class="num">−1</td></tr></tbody></table>',opts:['(가) – 겉보기 등급이 절대 등급보다 작아서','(나) – 겉보기 등급이 절대 등급보다 커서','(가)와 (나)는 같은 거리','알 수 없다'],ans:1,hint:'겉보기 등급이 절대 등급보다 큰 별은 10 pc보다 멀어요.',why:'(가)는 m < M이라 10 pc보다 가깝고, (나)는 m > M이라 10 pc보다 멀어요.'})+
+  qBlock('s3q2',{q:'별의 <b>겉보기 등급과 절대 등급</b>을 비교하면 무엇을 알 수 있을까요?',opts:['별의 표면 온도','별까지의 거리','별의 나이','별의 크기'],ans:1,hint:'절대 등급은 10 pc 기준이고, 겉보기 등급은 실제 거리에서의 밝기예요.',why:'두 등급이 같으면 10 pc, 겉보기 등급이 작으면 더 가까이, 크면 더 멀리 있어요.'})+
+  qBlock('s3q3',{q:'어떤 별의 겉보기 등급은 7, 절대 등급은 2예요(m − M = 5). 이 별까지의 거리는 얼마쯤일까요?',opts:['약 1 pc','약 10 pc','약 100 pc','약 1000 pc'],ans:2,hint:'위 표에서 m − M = +5인 칸을 찾아보세요.',why:'m − M이 5 커질 때마다 거리가 10배가 되므로, m − M = 5이면 10 pc의 10배인 100 pc예요.'})+'</section>'+
+  checksHtml(2)+navHtml(2);
+}
+function s3bind(){
+  var S=state.lab3;
+  function comp(m,M){
+    if(Math.abs(m-M)<0.05)return '<span class="badge mid">m = M → 10 pc</span>';
+    return m<M?'<span class="badge near">m &lt; M → 10 pc보다 가깝다</span>':'<span class="badge far">m &gt; M → 10 pc보다 멀다</span>';
+  }
+  function draw(){
+    var st=STARS3[S.star], d=tToD(S.t), m=st.M+5*Math.log10(d/10);
+    var X=function(dd){return 40+(Math.log10(dd)/Math.log10(DMAX))*520};
+    var xs=X(d), x10=X(10), svg=$('#svg3');
+    var ticks=[1,3,10,30,100,300].map(function(v){return '<line x1="'+X(v)+'" x2="'+X(v)+'" y1="92" y2="100" stroke="var(--muted)"/><text x="'+X(v)+'" y="114" text-anchor="middle" font-size="11" fill="var(--muted)">'+v+' pc</text>'}).join('');
+    var rr=Math.max(4,Math.min(20,12-m*1.8)), op=Math.max(.35,Math.min(1,1-m/14));
+    svg.innerHTML='<line x1="40" x2="560" y1="96" y2="96" stroke="var(--line)" stroke-width="2"/>'+ticks+
+     '<circle cx="40" cy="60" r="12" fill="var(--cool)"/><text x="40" y="38" text-anchor="middle" font-size="11" fill="var(--cool)">지구</text>'+
+     '<line x1="'+x10+'" x2="'+x10+'" y1="30" y2="96" stroke="var(--accent)" stroke-dasharray="4 4"/><text x="'+x10+'" y="24" text-anchor="middle" font-size="11" fill="var(--accent-text)">10 pc 기준</text>'+
+     '<circle cx="'+xs+'" cy="60" r="'+(rr+8)+'" fill="var(--accent)" opacity="'+(op*.2)+'"/><circle cx="'+xs+'" cy="60" r="'+rr+'" fill="var(--accent)" opacity="'+op+'"/>'+
+     '<text x="'+xs+'" y="140" text-anchor="middle" font-size="11" fill="var(--fg)">'+st.n+'</text>';
+    $('#d3').textContent=(d<10?d.toFixed(2):d.toFixed(1))+' pc ('+(d*3.26).toFixed(1)+'광년)';
+    $('#M3').textContent=st.M.toFixed(1); $('#m3').textContent=m.toFixed(2); $('#cmp3').innerHTML=comp(m,st.M);
+    var diff=m-st.M; $('#mm3').textContent=(diff>0?'+':'')+diff.toFixed(2);
+    $('#mean3').textContent=Math.abs(diff)<0.05?'10 pc':(diff<0?'값이 작다 → 가까움':'값이 크다 → 멀리 있음');
+    $('#rel3 tbody').innerHTML=[1,3,10,30,100,300].map(function(v){
+      var mv=st.M+5*Math.log10(v/10), dv=mv-st.M, near=Math.abs(Math.log10(v)-Math.log10(d))<0.2;
+      return '<tr'+(near?' class="hit"':'')+'><td class="num">'+v+'</td><td class="num">'+mv.toFixed(1)+'</td><td class="num">'+(dv>0?'+':'')+dv.toFixed(1)+'</td><td>'+(v<10?'가깝다':v===10?'10 pc':'멀다')+'</td></tr>';
+    }).join('');
+    if(S.star===0&&!S.bonus&&Math.abs(m-(-1.5))<=0.1){S.bonus=true;addScore(1);$('#s3fb').textContent='숨은 별 찾기 성공! +1  시리우스는 실제로 '+STARS3[0].real+' 거리에 있어요.';$('#s3fb').className='fb good'}
+  }
+  $('#r3').value=S.t;
+  $('#r3').oninput=function(){S.t=+this.value;draw()};
+  $$('#pick3 button').forEach(function(b){
+    b.setAttribute('aria-pressed',(+b.getAttribute('data-i')===S.star));
+    b.onclick=function(){S.star=+b.getAttribute('data-i');$$('#pick3 button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});draw()};
+  });
+  // classification mission
+  var cards=[{n:'(가)',m:1,M:5,a:0},{n:'(나)',m:3,M:-1,a:2},{n:'(다)',m:2,M:2,a:1}];
+  var pick=state.match.s3||{};
+  var labels=['10 pc보다 가깝다','10 pc','10 pc보다 멀다'];
+  function kit(){
+    var fin=done('s3m');
+    $('#kit3').innerHTML=cards.map(function(c,i){
+      return '<div class="row"><div><b>'+c.n+'</b> &nbsp;<span style="font-family:var(--f-mono)">m = '+c.m+', M = '+c.M+'</span></div><div class="tri">'+
+        labels.map(function(l,j){var on=fin?(c.a===j):(pick[i]===j);return '<button data-r="'+i+'" data-j="'+j+'" aria-pressed="'+on+'"'+(fin?' disabled':'')+'>'+l+'</button>'}).join('')+'</div></div>';
+    }).join('');
+    $$('#kit3 button').forEach(function(b){b.onclick=function(){pick[+b.getAttribute('data-r')]=+b.getAttribute('data-j');state.match.s3=pick;kit()}});
+  }
+  kit();
+  $('#chk3').onclick=function(){
+    if(done('s3m'))return;
+    var allSet=cards.every(function(c,i){return pick[i]!=null});
+    if(!allSet){$('#kfb').textContent='세 별 모두 골라 주세요.';$('#kfb').className='fb';return}
+    var bad=cards.filter(function(c,i){return pick[i]!==c.a});
+    if(!bad.length){$('#kfb').textContent='';missionWin('s3m',$('#mis3'),'성공! m과 M을 비교하면 10 pc와의 관계를 알 수 있어요.');$('#chk3').disabled=true;kit()}
+    else{addScore(-1);$('#kfb').textContent=bad.length+'개가 달라요. (−1) m이 M보다 작은지 큰지 다시 비교해 보세요.';$('#kfb').className='fb bad'}
+  };
+  if(done('s3m'))$('#mis3').classList.add('done');
+  draw();
+  // magnitude-difference calculator
+  var C=state.lab3.calc||(state.lab3.calc={m:7,M:2});
+  function calc(){
+    var diff=C.m-C.M, d=Math.pow(10,(diff+5)/5);
+    $('#cmv').textContent=C.m+'등급'; $('#cMv').textContent=C.M+'등급';
+    $('#cdiff').textContent=(diff>0?'+':'')+diff.toFixed(1);
+    $('#cdist').textContent=(d<10?d.toFixed(2):d<100?d.toFixed(1):Math.round(d))+' pc ('+(d*3.26<100?(d*3.26).toFixed(1):Math.round(d*3.26))+'광년)';
+    $('#ccmp').innerHTML=Math.abs(diff)<0.05?'<span class="badge mid">m = M → 10 pc</span>':diff<0?'<span class="badge near">m &lt; M → 10 pc보다 가깝다</span>':'<span class="badge far">m &gt; M → 10 pc보다 멀다</span>';
+  }
+  $('#cm').value=C.m;$('#cM').value=C.M;
+  $('#cm').oninput=function(){C.m=+this.value;calc()};
+  $('#cM').oninput=function(){C.M=+this.value;calc()};
+  calc();
+}
+
+/* ---------- Station 4 ---------- */
+function s4(){
+  var m=state.match.s4||{};
+  var items=[['눈에 보이는 별의 밝기를 등급으로 나타낸 것',0],['별이 10 pc 거리에 있다고 가정했을 때의 밝기를 나타낸 것',1],['별의 실제 밝기를 비교할 때 이용하는 등급',1],['지구에서 별까지의 거리를 고려하지 않고 정한 등급',1]];
+  return say('마지막 정거장이야! 지금까지 배운 걸 정리해 보자. 퀴즈를 모두 풀면 <b>우주 탐험가 수료증</b>을 줄게. (교과서 231쪽, 235쪽)')+
+  '<section class="card"><h3><span class="tag">정리</span>겉보기 등급 vs 절대 등급</h3><p class="sub">각 설명이 어느 등급에 대한 것인지 골라 보세요.</p>'+
+  '<div class="kit" id="kit4">'+items.map(function(it,i){return '<div class="row"><div>'+it[0]+'</div><div class="tri" data-r="'+i+'"><button data-j="0">겉보기</button><button data-j="1">절대</button></div></div>'}).join('')+'</div>'+
+  '<div class="qfoot"><button class="btn" id="chk4"'+(done('s4m')?' disabled':'')+'>확인하기</button><span class="fb" id="kfb4"></span></div>'+
+  '<div class="mission'+(done('s4m')?' done':'')+'" id="mis4" style="margin-top:10px"><h4>짝짓기</h4><p class="mstat muted">'+(done('s4m')?'성공! <b>+3</b>':'네 문장을 모두 짝지으면 +3')+'</p></div></section>'+
+  '<section class="card"><h3>미니 퀴즈</h3>'+
+  qBlock('s4q1',{q:'별의 밝기를 나타내는 등급에서, 밝은 별일수록 등급 숫자는 어떻게 될까요?',opts:['커진다','작아진다','변하지 않는다'],ans:1,hint:'1등급 별이 6등급 별보다 100배 밝아요.',why:'등급 숫자가 작을수록 밝은 별이에요.'})+
+  qBlock('s4q2',{q:'시리우스의 겉보기 등급은 −1.5, 절대 등급은 1.4예요. 시리우스는 지구에서 몇 pc쯤에 있을까요?',opts:['10 pc보다 가깝다','정확히 10 pc','10 pc보다 멀다'],ans:0,hint:'m과 M 중 어느 쪽이 더 작은지 비교해 보세요.',why:'m(−1.5) < M(1.4)이므로 10 pc보다 가까워요.'})+
+  qBlock('s4q3',{q:'베텔게우스의 겉보기 등급은 0.4, 절대 등급은 −5.6이에요. 베텔게우스는 10 pc보다…',opts:['가깝다','멀다','같다'],ans:1,hint:'겉보기 등급이 절대 등급보다 크면 어떻게 될까요?',why:'m(0.4) > M(−5.6)이므로 10 pc보다 멀리 있어요.'})+
+  qBlock('s4q4',{q:'겉보기 등급과 절대 등급이 <b>같은</b> 별이 있다면 그 별까지의 거리는? (m − M = 0)',opts:['1 pc','10 pc','100 pc','알 수 없다'],ans:1,hint:'절대 등급은 별을 어디에 놓았다고 가정한 걸까요?',why:'절대 등급은 10 pc에서의 밝기이므로, 같으면 거리가 10 pc예요.'})+'</section>'+
+  checksHtml(3)+navHtml(3);
+}
+function s4bind(){
+  var pick=state.match.s4||{};var ans=[0,1,1,1];
+  function paint(){
+    $$('#kit4 .tri').forEach(function(t){
+      var r=+t.getAttribute('data-r');
+      $$('button',t).forEach(function(b){var j=+b.getAttribute('data-j');b.setAttribute('aria-pressed',done('s4m')?(ans[r]===j):(pick[r]===j));b.disabled=done('s4m')});
+    });
+  }
+  $$('#kit4 .tri button').forEach(function(b){b.onclick=function(){var r=+b.parentNode.getAttribute('data-r');pick[r]=+b.getAttribute('data-j');state.match.s4=pick;paint()}});
+  paint();
+  $('#chk4').onclick=function(){
+    if(done('s4m'))return;
+    if(ans.some(function(a,i){return pick[i]==null})){$('#kfb4').textContent='네 문장 모두 골라 주세요.';$('#kfb4').className='fb';return}
+    var bad=ans.filter(function(a,i){return pick[i]!==a});
+    if(!bad.length){missionWin('s4m',$('#mis4'),'성공!');$('#chk4').disabled=true;$('#kfb4').textContent='';paint()}
+    else{addScore(-1);$('#kfb4').textContent=bad.length+'개가 달라요. (−1) 10 pc 가정이 들어간 쪽은 어느 등급일까요?';$('#kfb4').className='fb bad'}
+  };
+}
+
+/* ---------- finish ---------- */
+function finish(){
+  var pct=Math.round(state.score/MAX_SCORE*100);
+  var rank=pct>=85?'은하 탐험가':pct>=60?'별빛 탐험가':'새내기 탐험가';
+  return '<div class="cert"><p class="muted" style="font-size:13px">VII. 별과 우주 · 1. 별 — 밝기로 구하는 별까지의 거리</p><h2>우주 탐험가 수료증</h2>'+
+  '<div style="margin:14px 0"><input id="nm" type="text" maxlength="12" placeholder="이름을 입력하세요" aria-label="이름" value="'+state.name.replace(/"/g,'')+'"></div>'+
+  '<p id="who" style="font-family:var(--f-display);font-size:22px"></p>'+
+  '<div class="big">'+state.score+' <span class="muted" style="font-size:18px">/ '+MAX_SCORE+'</span></div>'+
+  '<p class="muted" style="font-size:13px">별 점수 · 달성도 '+pct+'%</p>'+
+  '<div class="three"><div><b>1.</b> 별의 밝기는 숫자인 <b>등급</b>으로 나타내고, 숫자가 작을수록 밝아요.</div>'+
+  '<div><b>2.</b> 눈에 보이는 밝기는 <b>겉보기 등급</b>, 10 pc에 있다고 가정한 밝기는 <b>절대 등급</b>이에요.</div>'+
+  '<div><b>3.</b> 겉보기 등급과 절대 등급을 <b>비교하면 별까지의 거리</b>를 알 수 있어요. m − M이 클수록 멀고, 5 커질 때마다 거리는 10배예요.</div></div>'+
+  '<div class="nav" style="justify-content:center"><button class="btn ghost" id="again">처음부터 다시</button></div></div>'+
+  '<p class="muted" style="font-size:12px;text-align:center;margin-top:10px">교과서 230~231쪽(밝기로 구하는 별까지의 거리) 내용을 바탕으로 만들었어요.</p>';
+  function _(){rank}
+}
+function finishBind(){
+  var pct=Math.round(state.score/MAX_SCORE*100);
+  var rank=pct>=85?'은하 탐험가':pct>=60?'별빛 탐험가':'새내기 탐험가';
+  function who(){var n=($('#nm').value||'').trim();state.name=n;$('#who').textContent=(n?n+' ':'')+'— '+rank+' 인증'}
+  $('#nm').oninput=who; who();
+  $('#again').onclick=function(){location.reload()};
+}
+
+/* ---------- render ---------- */
+function render(){
+  var app=$('#app'),i=state.st,h='';
+  if(i===0)h+='<header class="hero"><div><h1>별빛 밝기 여행</h1><p>별은 왜 어떤 건 밝고 어떤 건 희미할까? 별똥이와 4개의 정거장을 지나며 밝기로 별까지의 거리를 알아내 봐요. 약 15분 걸려요.</p>'+
+    '<div class="rules"><span class="pill">첫 시도 정답 <b>+3</b></span><span class="pill">미션 성공 <b>+3</b></span><span class="pill">오답 <b>−1</b></span><span class="pill">힌트 <b>−1</b></span></div></div></header>';
+  if(i<4)h+='<h2 style="font-size:22px;margin-top:8px"><span class="muted" style="font-family:var(--f-mono);font-size:14px">정거장 '+(i+1)+' / 4 &nbsp;</span>'+STATIONS[i].name+'</h2>';
+  if(i===0)h+=s1(); else if(i===1)h+=s2(); else if(i===2)h+=s3(); else if(i===3)h+=s4(); else h+=finish();
+  app.innerHTML=h;
+  if(i<4){bindQs(app)}
+  if(i===0)s1bind(); if(i===1)s2bind(); if(i===2)s3bind(); if(i===3)s4bind(); if(i===4)finishBind();
+  var nx=$('#next');
+  if(nx){nx.onclick=function(){if(!stationDone(state.st))return;state.unlocked=Math.max(state.unlocked,state.st+1);go(state.st+1)}}
+  if(i<4&&stationDone(i)&&state.unlocked<i+1)state.unlocked=i+1;
+  drawRail();
+}
+render();
+})();
+</script>
+
+</body></html>
